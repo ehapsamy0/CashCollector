@@ -1,4 +1,5 @@
 from drf_spectacular.utils import extend_schema
+from rest_framework import generics
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 from rest_framework.exceptions import ValidationError
@@ -9,9 +10,11 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from cash_collector.core.utils import api_get_object_or_404
+from cash_collector.users.permissions import IsManagerOrSelf
 from cash_collector.users.serializers import CashCollectorStatusSerializer
 
 from .models import CashCollector
+from .models import Manager
 from .models import User
 from .serializers import StatusAtTimeSerializer
 
@@ -67,3 +70,15 @@ class StatusAtTimeView(APIView):
             )
             return Response({"status": status})
         raise ValidationError(serializer.errors)
+
+
+class CashCollectorListView(generics.ListAPIView):
+    serializer_class = CashCollectorStatusSerializer
+    permission_classes = [IsManagerOrSelf]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.manager:
+            return CashCollector.objects.filter(id=user.id)
+        return CashCollector.objects.filter(manager__isnull=False)
+

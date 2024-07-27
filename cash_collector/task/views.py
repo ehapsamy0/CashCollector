@@ -10,6 +10,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from cash_collector.task.filters import TaskFilter
 from cash_collector.task.serializers import TaskReadeSerializer
 from cash_collector.task.serializers import TaskWriteSerializer
 
@@ -20,11 +21,16 @@ from .models import Task
 
 class TaskListAPIView(generics.ListAPIView):
     serializer_class = TaskWriteSerializer
+    filterset_class = TaskFilter
 
     def get_queryset(self):
-        return Task.objects.filter(
-            cash_collector=self.request.user.id, status=Task.Status.COLLECTED
-        ).select_related("cash_collector")
+        filters = {}
+        if self.request.user.manager:
+            filters["cash_collector"] = self.request.user.id
+            filters["status"] = Task.Status.COLLECTED
+            return Task.objects.filter(**filters).select_related("cash_collector")
+        return Task.objects.all()
+
 
     def get_serializer_class(self):
         if self.request.method in permissions.SAFE_METHODS:

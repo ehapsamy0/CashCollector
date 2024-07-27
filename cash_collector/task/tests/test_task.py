@@ -20,6 +20,7 @@ def collector(db):
 def manager(db):
     return ManagerFactory()
 
+
 @pytest.mark.django_db()
 def test_task_creation_without_manager():
     cash_collector = CashCollectorFactory(manager=None)
@@ -94,3 +95,32 @@ def test_get_list_of_done_tasks(manager):
         assert task["status"] == "collected"
 
 
+@pytest.mark.django_db()
+def test_manager_can_access_all_tasks(manager):
+    client = APIClient()
+    collectors = CashCollectorFactory.create_batch(5, manager=manager)
+    tasks = [TaskFactory(cash_collector=collector) for collector in collectors]
+
+    client.force_authenticate(user=manager)
+    url = "/api/tasks/"
+    response = client.get(url)
+
+    assert response.status_code == status.HTTP_200_OK
+    assert len(response.data["results"]) == len(tasks)
+
+
+@pytest.mark.django_db()
+def test_collector_can_only_access_their_own_tasks(manager):
+    client = APIClient()
+    collector1 = CashCollectorFactory(manager=manager)
+    collector2 = CashCollectorFactory(manager=manager)
+    TaskFactory.create_batch(5, cash_collector=collector1,status=Task.Status.COLLECTED)
+    TaskFactory.create_batch(5, cash_collector=collector2,status=Task.Status.COLLECTED)
+
+    client.force_authenticate(user=collector1)
+    url = "/api/tasks/"
+    response = client.get(url)
+    assert response.status_code == status.HTTP_200_OK
+    assert len(response.data["results"]) == 5
+    for task in response.data["results"]:
+        assert task["cash_collector"] == collector1.id

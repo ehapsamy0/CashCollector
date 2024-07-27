@@ -64,6 +64,7 @@ def deliver_amount(collector_id, amount):
 
         # Update collector's balance and last delivery time
         collector.last_delivery_time = timezone.now()
+        collector.is_frozen = False
         collector.save()
 
         return transaction  # noqa: TRY300

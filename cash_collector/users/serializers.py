@@ -17,3 +17,5 @@ class CashCollectorStatusSerializer(serializers.ModelSerializer):
 class StatusAtTimeSerializer(serializers.Serializer):
     collector_id = serializers.IntegerField()
     time_point = serializers.DateTimeField()
+
+
