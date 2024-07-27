@@ -2,6 +2,7 @@
 """Base settings to build other settings files upon."""
 
 from pathlib import Path
+from datetime import timedelta
 
 import environ
 
@@ -324,7 +325,7 @@ SOCIALACCOUNT_FORMS = {"signup": "cash_collector.users.forms.UserSocialSignupFor
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework.authentication.SessionAuthentication",
-        "rest_framework.authentication.TokenAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
@@ -332,6 +333,15 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
     "PAGE_SIZE": env.bool("PAGE_SIZE", 20),
 
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(
+        days=env.int("ACCESS_TOKEN_LIFETIME_IN_DAYS", 7),  # type: ignore  # noqa: PGH003
+    ),
+    "REFRESH_TOKEN_LIFETIME": timedelta(
+        days=env.int("REFRESH_TOKEN_LIFETIME_IN_DAYS", 30),  # type: ignore  # noqa: PGH003
+    ),
 }
 DRF_STANDARDIZED_ERRORS = {
     "EXCEPTION_FORMATTER_CLASS": "cash_collector.core.exception_handlers.DRFExceptionFormatter",
@@ -350,3 +360,8 @@ SPECTACULAR_SETTINGS = {
 }
 # Your stuff...
 # ------------------------------------------------------------------------------
+
+
+MAX_BALANCE_THRESHOLD = env.int("MAX_BALANCE_THRESHOLD", default=5000)
+FREEZE_DAYS_THRESHOLD = env.int("FREEZE_DAYS_THRESHOLD", default=2)
+

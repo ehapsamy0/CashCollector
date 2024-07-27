@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _
 
 from .forms import UserAdminChangeForm
 from .forms import UserAdminCreationForm
-from .models import User
+from .models import User, CashCollector, Manager
 
 if settings.DJANGO_ADMIN_FORCE_ALLAUTH:
     # Force the `admin` sign in process to go through the `django-allauth` workflow:
@@ -26,6 +26,7 @@ class UserAdmin(auth_admin.UserAdmin):
             _("Permissions"),
             {
                 "fields": (
+                    "manager",
                     "is_active",
                     "is_staff",
                     "is_superuser",
@@ -34,7 +35,24 @@ class UserAdmin(auth_admin.UserAdmin):
                 ),
             },
         ),
-        (_("Important dates"), {"fields": ("last_login", "date_joined")}),
+        (
+            _("Important dates"),
+            {"fields": ("last_login", "date_joined", "total_collected","is_frozen")},
+        ),
     )
     list_display = ["username", "name", "is_superuser"]
     search_fields = ["name"]
+
+
+class CashCollectorAdmin(admin.ModelAdmin):
+    list_display = ["is_frozen"]
+
+    def get_status_at_time(self, request, queryset):
+        # Custom logic to calculate status at different times
+        pass
+
+    actions = [get_status_at_time]
+
+
+admin.site.register(CashCollector, CashCollectorAdmin)
+admin.site.register(Manager)

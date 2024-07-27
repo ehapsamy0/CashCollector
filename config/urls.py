@@ -10,13 +10,12 @@ from django.views import defaults as default_views
 from django.views.generic import TemplateView
 from drf_spectacular.views import SpectacularAPIView
 from drf_spectacular.views import SpectacularSwaggerView
-from rest_framework.authtoken.views import obtain_auth_token
 
 urlpatterns = [
     path("", lambda request: HttpResponse("hello"), name="home"),
     path(settings.ADMIN_URL, admin.site.urls),
     # User management
-    # path("users/", include("cash_collector.users.urls", namespace="users")),
+    path("api/", include("cash_collector.core.urls", namespace="core")),
     *static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT),
 ]
 if settings.DEBUG:
@@ -27,7 +26,6 @@ if settings.DEBUG:
 urlpatterns += [
     # API base url
     # DRF auth token
-    path("api/auth-token/", obtain_auth_token),
     path("api/schema/", SpectacularAPIView.as_view(), name="api-schema"),
     path(
         "api/docs/",

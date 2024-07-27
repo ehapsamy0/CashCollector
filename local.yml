@@ -42,30 +42,30 @@ services:
       - cash_collector_local_redis_data:/data
 
 
-  # celeryworker:
-  #   <<: *django
-  #   image: cash_collector_local_celeryworker
-  #   container_name: cash_collector_local_celeryworker
-  #   depends_on:
-  #     - redis
-  #     - postgres
-  #   ports: []
-  #   command: /start-celeryworker
+  celeryworker:
+    <<: *django
+    image: cash_collector_local_celeryworker
+    container_name: cash_collector_local_celeryworker
+    depends_on:
+      - redis
+      - postgres
+    ports: []
+    command: /start-celeryworker
 
-  # celerybeat:
-  #   <<: *django
-  #   image: cash_collector_local_celerybeat
-  #   container_name: cash_collector_local_celerybeat
-  #   depends_on:
-  #     - redis
-  #     - postgres
-  #   ports: []
-  #   command: /start-celerybeat
+  celerybeat:
+    <<: *django
+    image: cash_collector_local_celerybeat
+    container_name: cash_collector_local_celerybeat
+    depends_on:
+      - redis
+      - postgres
+    ports: []
+    command: /start-celerybeat
 
-  # flower:
-  #   <<: *django
-  #   image: cash_collector_local_flower
-  #   container_name: cash_collector_local_flower
-  #   ports:
-  #     - '5555:5555'
-  #   command: /start-flower
+  flower:
+    <<: *django
+    image: cash_collector_local_flower
+    container_name: cash_collector_local_flower
+    ports:
+      - '5555:5555'
+    command: /start-flower
