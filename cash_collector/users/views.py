@@ -1,45 +1,69 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.messages.views import SuccessMessageMixin
-from django.urls import reverse
-from django.utils.translation import gettext_lazy as _
-from django.views.generic import DetailView
-from django.views.generic import RedirectView
-from django.views.generic import UpdateView
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
+from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
 
-from cash_collector.users.models import User
+from cash_collector.core.utils import api_get_object_or_404
+from cash_collector.users.serializers import CashCollectorStatusSerializer
 
-
-class UserDetailView(LoginRequiredMixin, DetailView):
-    model = User
-    slug_field = "username"
-    slug_url_kwarg = "username"
-
-
-user_detail_view = UserDetailView.as_view()
+from .models import CashCollector
+from .models import User
+from .serializers import StatusAtTimeSerializer
 
 
-class UserUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
-    model = User
-    fields = ["name"]
-    success_message = _("Information successfully updated")
+class CustomTokenObtainPairView(TokenObtainPairView):
+    class CustomTokenObtainPairViewOutputSerializer(serializers.Serializer):
+        refresh = serializers.CharField()
+        access = serializers.CharField()
 
-    def get_success_url(self):
-        # for mypy to know that the user is authenticated
-        assert self.request.user.is_authenticated
-        return self.request.user.get_absolute_url()
+    class TokenSerializer(TokenObtainPairSerializer):
+        @classmethod
+        def get_token(cls, user: User):
+            token = super().get_token(user)
 
-    def get_object(self):
-        return self.request.user
+            # Users Claims
+            token["name"] = user.name
+            token["username"] = user.username
+            return token
+
+    serializer_class = TokenSerializer
+
+    @extend_schema(
+        request=TokenObtainPairSerializer,
+        responses=CustomTokenObtainPairViewOutputSerializer,
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
 
 
-user_update_view = UserUpdateView.as_view()
+class CashCollectorStatusView(APIView):
+    serializer_class = CashCollectorStatusSerializer
+
+    def get(self, request):
+        try:
+            collector = CashCollector.objects.get(pk=request.user.id)
+            return Response(self.serializer_class(collector).data)
+        except CashCollector.DoesNotExist:
+            msg = "CashCollector not found."
+            raise NotFound(msg)  # noqa: B904
 
 
-class UserRedirectView(LoginRequiredMixin, RedirectView):
-    permanent = False
+class StatusAtTimeView(APIView):
+    serializer_class = StatusAtTimeSerializer
 
-    def get_redirect_url(self):
-        return reverse("users:detail", kwargs={"username": self.request.user.username})
-
-
-user_redirect_view = UserRedirectView.as_view()
+    def post(self, request):
+        serializer = StatusAtTimeSerializer(data=request.data)
+        if serializer.is_valid():
+            collector_id = serializer.validated_data["collector_id"]
+            time_point = serializer.validated_data["time_point"]
+            collector = api_get_object_or_404(CashCollector, pk=collector_id)
+            status = (
+                "frozen" if collector.is_frozen_at(time_point) else "not frozen"
+            )
+            return Response({"status": status})
+        raise ValidationError(serializer.errors)

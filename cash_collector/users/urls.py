@@ -1,12 +1,16 @@
 from django.urls import path
+from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework_simplejwt.views import TokenVerifyView
 
-from .views import user_detail_view
-from .views import user_redirect_view
-from .views import user_update_view
+from cash_collector.users.views import CashCollectorStatusView
+from cash_collector.users.views import CustomTokenObtainPairView
+from cash_collector.users.views import StatusAtTimeView
 
 app_name = "users"
 urlpatterns = [
-    path("~redirect/", view=user_redirect_view, name="redirect"),
-    path("~update/", view=user_update_view, name="update"),
-    path("<str:username>/", view=user_detail_view, name="detail"),
+    path("token/", CustomTokenObtainPairView.as_view(), name="obtain_token"),
+    path("token/refresh/", TokenRefreshView.as_view(), name="refresh_token"),
+    path("token/verify/", TokenVerifyView.as_view(), name="verify_token"),
+    path("status/", CashCollectorStatusView.as_view(), name="collector-status"),
+    path("status-at-time/", StatusAtTimeView.as_view(), name="status-at-time"),
 ]
