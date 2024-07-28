@@ -1,6 +1,7 @@
 import pytest
 from django.core.exceptions import ValidationError
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -44,7 +45,11 @@ def test_task_creation_with_manager(manager):
 def test_next_task_api(manager):
     client = APIClient()
     cash_collector = CashCollectorFactory(manager=manager)
-    TaskFactory.create_batch(5, cash_collector=cash_collector)
+    TaskFactory.create_batch(
+        5,
+        cash_collector=cash_collector,
+        amount_due_at=timezone.now(),
+    )
 
     client.force_authenticate(user=cash_collector)
     url = "/api/tasks/next-task/"
@@ -60,7 +65,10 @@ def test_no_next_task_api(manager):
     client = APIClient()
     cash_collector = CashCollectorFactory(manager=manager)
     TaskFactory.create_batch(
-        5, cash_collector=cash_collector, status=Task.Status.COLLECTED
+        5,
+        cash_collector=cash_collector,
+        amount_due_at=timezone.now() + timezone.timedelta(hours=1),
+        status=Task.Status.PENDING,
     )
     client.force_authenticate(user=cash_collector)
     url = "/api/tasks/next-task/"
@@ -114,8 +122,8 @@ def test_collector_can_only_access_their_own_tasks(manager):
     client = APIClient()
     collector1 = CashCollectorFactory(manager=manager)
     collector2 = CashCollectorFactory(manager=manager)
-    TaskFactory.create_batch(5, cash_collector=collector1,status=Task.Status.COLLECTED)
-    TaskFactory.create_batch(5, cash_collector=collector2,status=Task.Status.COLLECTED)
+    TaskFactory.create_batch(5, cash_collector=collector1, status=Task.Status.COLLECTED)
+    TaskFactory.create_batch(5, cash_collector=collector2, status=Task.Status.COLLECTED)
 
     client.force_authenticate(user=collector1)
     url = "/api/tasks/"

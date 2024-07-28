@@ -1,3 +1,5 @@
+from django.utils.translation import gettext_lazy as _
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import BasePermission
 
 from cash_collector.users.models import Manager
@@ -19,3 +21,12 @@ class IsManagerOrSelf(BasePermission):
             return True
         # Allow access if the user is accessing their own record
         return obj == request.user
+
+
+class IsNotFrozen(BasePermission):
+    message = _("task_error_message_to_no_next_task_for_you_because_you_are_frozen")
+
+    def has_permission(self, request, view):
+        if request.user.is_frozen:
+            raise ValidationError(self.message)
+        return True

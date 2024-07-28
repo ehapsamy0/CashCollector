@@ -112,3 +112,20 @@ def test_partial_collect_amount(manager):
     assert task.amount_collected == 100.00  # noqa: PLR2004
     assert task.status == Task.Status.PARTIALLY_COLLECTED
 
+
+@pytest.mark.django_db()
+def test_collect_amount_when_frozen(manager):
+    client = APIClient()
+    frozen_collector = CashCollectorFactory(manager=manager,is_frozen=True)
+    task = TaskFactory(cash_collector=frozen_collector, status=Task.Status.PENDING)
+
+    client.force_authenticate(user=frozen_collector)
+    url = "/api/transactions/collect/"
+    data = {"task_id": task.id, "amount": 100.00}
+    response = client.post(url, data)
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert (
+        "task_error_message_to_no_next_task_for_you_because_you_are_frozen"
+        in response.data["message"]
+    )

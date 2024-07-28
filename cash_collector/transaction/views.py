@@ -1,7 +1,7 @@
 from rest_framework import generics
-from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
+
+from cash_collector.users.permissions import IsNotFrozen
 
 from .serializers import CollectAmountSerializer
 from .serializers import DeliverAmountSerializer
@@ -9,8 +9,10 @@ from .serializers import DeliverAmountSerializer
 
 class CollectAmountView(generics.CreateAPIView):
     serializer_class = CollectAmountSerializer
+    permission_classes = [IsAuthenticated, IsNotFrozen]
 
 
 class DeliverAmountView(generics.CreateAPIView):
     serializer_class = DeliverAmountSerializer
 
+    permission_classes = [IsAuthenticated, IsNotFrozen]
