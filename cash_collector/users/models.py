@@ -33,7 +33,7 @@ class User(AbstractUser):
     phone = models.CharField(max_length=255, default="", null=True, blank=True)  # noqa: DJ001
     image = models.URLField(default="", max_length=500, null=True, blank=True)  # noqa: DJ001
     total_collected = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-    is_frozen = models.BooleanField(default=None,null=True,blank=True)
+    is_frozen = models.BooleanField(default=None,null=True,blank=True,db_index=True)
 
 
     def clean(self):

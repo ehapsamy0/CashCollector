@@ -11,9 +11,6 @@ from cash_collector.users.models import CashCollector
 # Create your models here.
 
 
-
-
-
 class Task(TimeStampModelMixin):
     class Status(models.IntegerChoices):
         PENDING = 1, _("pending")
@@ -22,7 +19,7 @@ class Task(TimeStampModelMixin):
         PARTIALLY_COLLECTED = 4, _("partially_collected")
 
     cash_collector = models.ForeignKey(
-        CashCollector, on_delete=models.CASCADE, related_name="tasks"
+        CashCollector, on_delete=models.CASCADE, related_name="tasks",
     )
     customer_name = models.CharField(max_length=255)
     address = models.CharField(max_length=255)
@@ -30,11 +27,19 @@ class Task(TimeStampModelMixin):
     amount_collected = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     amount_due_at = models.DateTimeField()
     status = models.PositiveSmallIntegerField(
-        max_length=20, choices=Status.choices, default=Status.PENDING
-    )  # noqa: E501v
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+        db_index=True,
+    )
 
     def __str__(self):
         return f"{self.customer_name} - {self.amount_due}"
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["status", "amount_due_at"]),
+        ]
 
     def clean(self):
         if not self.cash_collector.manager:
@@ -48,9 +53,11 @@ class Task(TimeStampModelMixin):
         self.full_clean()
         super().save(*args, **kwargs)
 
+
 @receiver(pre_save, sender=Task)
 def validate_task(sender, instance, **kwargs):
     if not instance.cash_collector.manager:
         from django.core.exceptions import ValidationError
+
         msg = "task_error_message_to_say_you_cannot_assign_this_task_to_this_user_because_they_do_not_have_a_manager"  # noqa: E501
         raise ValidationError(msg)

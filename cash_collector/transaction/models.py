@@ -18,7 +18,7 @@ class Transaction(TimeStampModelMixin):
     )
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     transaction_type = models.PositiveSmallIntegerField(
-        choices=Type.choices, default=Type.COLLECT
+        choices=Type.choices, default=Type.COLLECT,db_index=True,
     )
     task = models.ForeignKey(Task, on_delete=models.SET_NULL, null=True, blank=True)
 
