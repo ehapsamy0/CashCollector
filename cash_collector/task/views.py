@@ -1,6 +1,10 @@
 import json
 
 from django.db import transaction
+from django.db.models import Case
+from django.db.models import IntegerField
+from django.db.models import Value
+from django.db.models import When
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework import generics
@@ -46,15 +50,23 @@ class NextTaskAPIView(APIView):
             return TaskReadeSerializer
         return TaskWriteSerializer
 
+
     def get(self, request):
         now = timezone.now()
         next_task = (
             Task.objects.filter(
                 cash_collector=self.request.user.id,
-                status=Task.Status.PENDING,
+                status__in=[Task.Status.PENDING, Task.Status.PARTIALLY_COLLECTED],
                 amount_due_at__lte=now,
             )
-            .order_by("amount_due_at")
+            .annotate(
+                order=Case(
+                    When(status=Task.Status.PARTIALLY_COLLECTED, then=Value(1)),
+                    When(status=Task.Status.PENDING, then=Value(0)),
+                    output_field=IntegerField(),
+                )
+            )
+            .order_by("order", "amount_due_at")
             .select_related("cash_collector")
             .first()
         )

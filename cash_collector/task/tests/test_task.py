@@ -132,3 +132,47 @@ def test_collector_can_only_access_their_own_tasks(manager):
     assert len(response.data["results"]) == 5
     for task in response.data["results"]:
         assert task["cash_collector"] == collector1.id
+
+
+@pytest.mark.django_db()
+def test_get_next_task_pending_first(manager):
+    client = APIClient()
+    collector = CashCollectorFactory(manager=manager)
+    TaskFactory(
+        cash_collector=collector,
+        status=Task.Status.PENDING,
+    )
+    TaskFactory(
+        cash_collector=collector,
+        status=Task.Status.PARTIALLY_COLLECTED,
+    )
+
+    client.force_authenticate(user=collector)
+    url = "/api/tasks/next-task/"
+    response = client.get(url)
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.data["status"] == "pending"
+
+
+@pytest.mark.django_db()
+def test_get_next_task_partially_collected(manager):
+    client = APIClient()
+    collector = CashCollectorFactory(manager=manager)
+    TaskFactory(
+        cash_collector=collector,
+        status=Task.Status.PENDING,
+        amount_due_at=timezone.now() + timezone.timedelta(minutes=10),
+    )
+    TaskFactory(
+        cash_collector=collector,
+        status=Task.Status.PARTIALLY_COLLECTED,
+        amount_due_at=timezone.now(),
+    )
+
+    client.force_authenticate(user=collector)
+    url = "/api/tasks/next-task/"
+    response = client.get(url)
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.data["status"] == "partially_collected"
