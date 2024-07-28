@@ -11,11 +11,15 @@ from cash_collector.users.models import CashCollector
 # Create your models here.
 
 
+
+
+
 class Task(TimeStampModelMixin):
     class Status(models.IntegerChoices):
         PENDING = 1, _("pending")
         COLLECTED = 2, _("collected")
         DELIVERED = 3, _("delivered")
+        PARTIALLY_COLLECTED = 4, _("partially_collected")
 
     cash_collector = models.ForeignKey(
         CashCollector, on_delete=models.CASCADE, related_name="tasks"
@@ -23,6 +27,7 @@ class Task(TimeStampModelMixin):
     customer_name = models.CharField(max_length=255)
     address = models.CharField(max_length=255)
     amount_due = models.DecimalField(max_digits=10, decimal_places=2)
+    amount_collected = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     amount_due_at = models.DateTimeField()
     status = models.PositiveSmallIntegerField(
         max_length=20, choices=Status.choices, default=Status.PENDING

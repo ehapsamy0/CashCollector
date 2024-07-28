@@ -26,3 +26,5 @@ class Transaction(TimeStampModelMixin):
         return (
             f"{self.cash_collector.username} - {self.amount} - {self.transaction_type}"
         )
+
+

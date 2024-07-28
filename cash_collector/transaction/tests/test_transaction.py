@@ -14,18 +14,17 @@ from cash_collector.users.tests.factories import ManagerFactory
 def collector(db):
     return CashCollectorFactory()
 
+
 @pytest.fixture()
 def manager(db):
     return ManagerFactory()
-
-
 
 
 @pytest.mark.django_db()
 def test_collect_amount(manager):
     client = APIClient()
     cash_collector = CashCollectorFactory(manager=manager)
-    task = TaskFactory(cash_collector=cash_collector)
+    task = TaskFactory(cash_collector=cash_collector, amount_due=100)
 
     client.force_authenticate(user=cash_collector)
     url = "/api/transactions/collect/"
@@ -96,3 +95,20 @@ def test_deliver_amount_no_manager():
     response = client.post(url, {"amount": 100.00})
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.data["message"] == "Collector does not have an assigned manager"
+
+
+@pytest.mark.django_db()
+def test_partial_collect_amount(manager):
+    client = APIClient()
+    cash_collector = CashCollectorFactory(manager=manager)
+    task = TaskFactory(cash_collector=cash_collector, amount_due=200)
+
+    client.force_authenticate(user=cash_collector)
+    url = "/api/transactions/collect/"
+    response = client.post(url, {"task_id": task.id, "amount": 100.00})
+
+    assert response.status_code == status.HTTP_201_CREATED
+    task.refresh_from_db()
+    assert task.amount_collected == 100.00  # noqa: PLR2004
+    assert task.status == Task.Status.PARTIALLY_COLLECTED
+

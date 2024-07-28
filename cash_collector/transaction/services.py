@@ -13,25 +13,27 @@ def collect_amount(task_id, amount):
         task = api_get_object_or_404(Task, id=task_id, status=Task.Status.PENDING)
         collector = task.cash_collector
 
+        if task.amount_due - task.amount_collected < amount:
+            msg = "Cannot collect more than the amount due"
+            raise ValueError(msg)
         # Create a transaction for the collected amount
+        task.amount_collected += amount
+        task.status = (
+            Task.Status.PARTIALLY_COLLECTED
+            if task.amount_collected < task.amount_due
+            else Task.Status.COLLECTED
+        )
+        task.save()
+
         collector.total_collected += amount
         collector.save()
-        transaction = Transaction.objects.create(
+        return Transaction.objects.create(
             cash_collector=collector,
             amount=amount,
-            transaction_type=1,
+            transaction_type=Transaction.Type.COLLECT,
             task=task,
         )
 
-        # Update task status to collected
-        task.status = Task.Status.COLLECTED
-        task.save()
-
-        # Update collector's last collection time
-        collector.last_collection_time = timezone.now()
-        collector.save()
-
-        return transaction  # noqa: TRY300
     except Task.DoesNotExist:
         msg = "Task not found or already completed"
         raise ValueError(msg)  # noqa: B904
@@ -59,11 +61,12 @@ def deliver_amount(collector_id, amount):
 
         # Create a transaction for the delivered amount
         transaction = Transaction.objects.create(
-            cash_collector=collector, amount=amount, transaction_type=2,
+            cash_collector=collector,
+            amount=amount,
+            transaction_type=Transaction.Type.DELIVER,
         )
 
-        # Update collector's balance and last delivery time
-        collector.last_delivery_time = timezone.now()
+        # Update collector's
         collector.is_frozen = False
         collector.save()
 
