@@ -1,3 +1,4 @@
+
 # cash_collector
 
 A cash collection application
@@ -84,3 +85,117 @@ The following details how to deploy this application.
 ### Docker
 
 See detailed [cookiecutter-django Docker documentation](http://cookiecutter-django.readthedocs.io/en/latest/deployment-with-docker.html).
+
+### Makefile Commands
+
+You can use the following make commands to build and manage your Docker project:
+
+- **Build and Up**: Build and start the Docker containers.
+    ```bash
+    make upbuild
+    ```
+
+- **Up**: Start the Docker containers.
+    ```bash
+    make up
+    ```
+
+- **Build**: Build the Docker containers.
+    ```bash
+    make build
+    ```
+
+- **Run**: Run a command in a new container.
+    ```bash
+    make run <command>
+    ```
+
+- **Restart**: Restart the Docker containers.
+    ```bash
+    make restart
+    ```
+
+- **Shell**: Open a Django shell.
+    ```bash
+    make shell
+    ```
+
+- **Bash**: Open a bash shell in the Django container.
+    ```bash
+    make bash
+    ```
+
+- **Make Migrations**: Create new database migrations based on the models.
+    ```bash
+    make makemigrations
+    ```
+
+- **Migrate**: Apply the database migrations.
+    ```bash
+    make migrate
+    ```
+
+- **Make Messages**: Create translation messages.
+    ```bash
+    make makemessages
+    ```
+
+- **Compile Messages**: Compile translation messages.
+    ```bash
+    make compilemessages
+    ```
+
+- **Superuser**: Create a new superuser.
+    ```bash
+    make superuser
+    ```
+
+- **Show URLs**: Show all registered URLs.
+    ```bash
+    make urls
+    ```
+
+- **Logs**: View the logs of the Docker containers.
+    ```bash
+    make logs
+    ```
+
+- **Test**: Run the test suite with Django settings for testing.
+    ```bash
+    make test
+    ```
+
+- **Test Local**: Run the test suite inside the running Django container.
+    ```bash
+    make test_local
+    ```
+
+- **Pytest**: Run tests with pytest.
+    ```bash
+    make pytest
+    ```
+
+- **Mypy**: Run type checks with mypy.
+    ```bash
+    make mypy
+    ```
+
+- **Debug**: Run a command in a new container with service ports enabled.
+    ```bash
+    make debug <command>
+    ```
+
+- **Down**: Stop and remove the Docker containers.
+    ```bash
+    make down
+    ```
+
+- **Destroy**: Stop and remove the Docker containers, volumes, and networks.
+    ```bash
+    make destroy
+    ```
+
+- **Remove Pyc**: Remove Python bytecode files.
+    ```bash
+    make rm_pyc
+    ```
