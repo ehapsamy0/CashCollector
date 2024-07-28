@@ -14,10 +14,10 @@ User = get_user_model()
 
 @shared_task
 def check_and_freeze_cash_collectors():
-    threshold_amount = 5000
-    threshold_minutes = 5
+    threshold_balance = settings.MAX_BALANCE_THRESHOLD
+    threshold_days = settings.FREEZE_DAYS_THRESHOLD
     now = timezone.now()
-    threshold_time = now - timedelta(days=threshold_minutes)
+    threshold_time = now - timedelta(days=threshold_days)
 
     collectors_to_check = CashCollector.objects.all()
 
@@ -28,6 +28,6 @@ def check_and_freeze_cash_collectors():
             .first()
         )
         if last_transaction and last_transaction.created_at <= threshold_time:
-            if collector.balance >= threshold_amount:
+            if collector.balance >= threshold_balance:
                 collector.is_frozen = True
                 collector.save()

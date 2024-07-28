@@ -1,3 +1,4 @@
+from django.db import transaction as db_transaction
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
@@ -16,23 +17,24 @@ def collect_amount(task_id, amount):
         if task.amount_due - task.amount_collected < amount:
             msg = "Cannot collect more than the amount due"
             raise ValueError(msg)
-        # Create a transaction for the collected amount
-        task.amount_collected += amount
-        task.status = (
-            Task.Status.PARTIALLY_COLLECTED
-            if task.amount_collected < task.amount_due
-            else Task.Status.COLLECTED
-        )
-        task.save()
+        # Start a database transaction
+        with db_transaction.atomic():
+            task.amount_collected += amount
+            task.status = (
+                Task.Status.PARTIALLY_COLLECTED
+                if task.amount_collected < task.amount_due
+                else Task.Status.COLLECTED
+            )
+            task.save()
 
-        collector.total_collected += amount
-        collector.save()
-        return Transaction.objects.create(
-            cash_collector=collector,
-            amount=amount,
-            transaction_type=Transaction.Type.COLLECT,
-            task=task,
-        )
+            collector.total_collected += amount
+            collector.save()
+            return Transaction.objects.create(
+                cash_collector=collector,
+                amount=amount,
+                transaction_type=Transaction.Type.COLLECT,
+                task=task,
+            )
 
     except Task.DoesNotExist:
         msg = "Task not found or already completed"
@@ -53,24 +55,25 @@ def deliver_amount(collector_id, amount):
             msg = "Collector does not have an assigned manager"
             raise ValidationError(msg)
 
-        # Update collector's and manager's total collected
-        collector.total_collected -= amount
-        manager.total_collected += amount
-        collector.save()
-        manager.save()
+        # Start a database transaction
+        with db_transaction.atomic():
+            collector.total_collected -= amount
+            manager.total_collected += amount
+            collector.save()
+            manager.save()
 
-        # Create a transaction for the delivered amount
-        transaction = Transaction.objects.create(
-            cash_collector=collector,
-            amount=amount,
-            transaction_type=Transaction.Type.DELIVER,
-        )
+            # Create a transaction for the delivered amount
+            transaction = Transaction.objects.create(
+                cash_collector=collector,
+                amount=amount,
+                transaction_type=Transaction.Type.DELIVER,
+            )
 
-        # Update collector's
-        collector.is_frozen = False
-        collector.save()
+            # Update collector's
+            collector.is_frozen = False
+            collector.save()
 
-        return transaction  # noqa: TRY300
+            return transaction
     except CashCollector.DoesNotExist:
         msg = "CashCollector not found"
         raise ValueError(msg)  # noqa: B904
